@@ -1,6 +1,8 @@
 package com.coloradocollege.cp122homework.project.map;
 
 import com.coloradocollege.cp122homework.project.map.node.*;
+import com.coloradocollege.cp122homework.project.entity.Boss;
+import com.coloradocollege.cp122homework.project.entity.Monster;
 
 import java.io.*;
 
@@ -10,19 +12,32 @@ public class Map {
     private MapNode[] nodes;
     private int currentNodeIndex;
     private String mapFileName;
+    private Scanner console;
+    private Random random;
+
     public Map() {
+        this(new Scanner(System.in));
+    }
+    public Map(Scanner console) {
         nodes = new MapNode[7];
         currentNodeIndex = 0;
-        mapFileName = "/Users/apple/IdeaProjects/CP122/src/com/coloradocollege/cp122homework/project/dungeonMap.txt";
+        mapFileName = "dungeonMap.txt";
+        this.console = console;
+        random = new Random();
+    }
+    public void setConsole(Scanner console) {
+        this.console = console;
     }
     public void generateMap() throws IOException {
-        nodes[0] = new MonsterNode(0);
-        nodes[1] = new MonsterNode(1);
-        nodes[2] = new EventNode(2);
-        nodes[3] = new MonsterNode(3);
-        nodes[4] = new ShopNode(4);
-        nodes[5] = new CampfireNode(5);
-        nodes[6] = new BossNode(6);
+        nodes[0] = new MonsterNode(0,
+                new Monster("Slime", "Slime", "monster1", 12, 4, 0), console, random);
+        nodes[1] = new MonsterNode(1,
+                new Monster("Goblin", "Goblin", "monster2", 16, 5, 1), console, random);
+        nodes[2] = new EventNode(2, console, random);
+        nodes[3] = new MonsterNode(3, new Monster("Ogre", "Ogre", "monster3", 20, 6, 1), console, random);
+        nodes[4] = new ShopNode(4, console);
+        nodes[5] = new CampfireNode(5, console);
+        nodes[6] = new BossNode(6, new Boss("Guardian", "boss", 28, 7, 2), console, random);
         saveMap();
     }
     public boolean travelToNextNode() {
@@ -41,7 +56,6 @@ public class Map {
     }
     public void saveMap() throws IOException{
         File file = new File(mapFileName);
-        file.createNewFile();
         PrintStream out = new PrintStream(file);
         for (int i = 0; i < nodes.length; i++) {
             if (nodes[i].isVisited()) {
@@ -54,8 +68,6 @@ public class Map {
         out.close();
     }
     public void updateMap() throws IOException {
-        File oldFile = new File(mapFileName);
-        oldFile.delete();
         saveMap();
     }
     public Scanner loadMap() throws FileNotFoundException {
@@ -66,9 +78,10 @@ public class Map {
     public void displayMap() throws FileNotFoundException {
         Scanner fileScanner = loadMap();
         while (fileScanner.hasNextLine()) {
-            String line = fileScanner.nextLine();
-            System.out.println(line);
+                String line = fileScanner.nextLine();
+                System.out.println(line);
         }
+        fileScanner.close();
     }
     public boolean hasNextNode() {
         return currentNodeIndex < nodes.length - 1;

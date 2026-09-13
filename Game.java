@@ -1,14 +1,9 @@
 package com.coloradocollege.cp122homework.project;
 
-import java.io.FileNotFoundException;
-
 import java.io.IOException;
-import java.util.InputMismatchException;
-
 import java.util.Scanner;
 
 import com.coloradocollege.cp122homework.project.entity.*;
-
 import com.coloradocollege.cp122homework.project.map.*;
 
 
@@ -20,33 +15,35 @@ public class Game {
     private Scanner console;
 
     public Game(Player player, Map map) {
+        this(player, map, new Scanner(System.in));
+    }
+
+    public Game(Player player, Map map, Scanner console) {
         this.player = player;
         this.map = map;
         this.gameOver = false;
         this.victory = false;
-        console = new Scanner(System.in);
+        this.console = console;
+        this.map.setConsole(console);
     }
+
+    public Game(Scanner console) {
+        this(null, new Map(console), console);
+    }
+
     public void start() {
-        console = new Scanner(System.in);
-        System.out.println("You walked into a dungeon, holding a sword/bow/wand?");
-        System.out.println("(press 1 to be a warrior, 2 to be a ranger, or 3 to be a mage)");
+        System.out.println("You walked into a dungeon, holding a sword/bow/staff.");
+        System.out.println("Choose your adventurer:");
+        System.out.println("1. Warrior  2. Archer  3. Mage");
+        player = createPlayer(readChoice(1, 3));
         try {
-            int choice = console.nextInt();
+            map.generateMap();
+            System.out.println("\nA map appears in your hand:");
+            map.displayMap();
+            System.out.println("Enter anything to continue...");
             console.nextLine();
-            player = createPlayer(choice);
-            try {
-                map.generateMap();
-                System.out.println("A map appears in your hand.");
-                map.displayMap();
-                System.out.println("Enter anything to continue");
-                console.nextLine();
-            } catch (IOException e) {
-                System.err.println("File IO err.");
-                //e.printStackTrace();
-            }
-        } catch (InputMismatchException e) {
-            System.out.println("Please enter a valid number.");
-            start();
+        } catch (IOException exception) {
+            throw new IllegalStateException("The dungeon map could not be created.", exception);
         }
     }
     public Player createPlayer(int choice) {
@@ -55,9 +52,8 @@ public class Game {
                 System.out.println("You chose to be a warrior.");
                 return new Warrior();
             case 2:
-                System.out.println("You chose to be a ranger.");
-                return new Ranger();
-
+                System.out.println("You chose to be an archer.");
+                return new Archer();
             case 3:
                 System.out.println("You chose to be a mage.");
                 return new Mage();
@@ -68,10 +64,20 @@ public class Game {
         }
     }
     public void run() throws IOException {
-        while (! (gameOver || victory)) {
-            //processCurrentNode();
-            displayUpdatedMap();
-            moveToNextNode();
+        while (!(gameOver || victory)) {
+            processCurrentNode();
+            map.markCurrentNodeVisited();
+            map.updateMap();
+            map.displayMap();
+            System.out.println("Enter anything to continue...");
+            console.nextLine();
+            if (!player.isAlive()) {
+                gameOver = true;
+            } else if (map.isComplete()) {
+                victory = true;
+            } else {
+                moveToNextNode();
+            }
         }
         if (victory) {
             victory();
@@ -83,7 +89,6 @@ public class Game {
     }
     public void processCurrentNode() {
         map.getCurrentNode().enter(player);
-
     }
     public void moveToNextNode() {
         map.travelToNextNode();
@@ -92,15 +97,31 @@ public class Game {
         map.markCurrentNodeVisited();
         map.updateMap();
         map.displayMap();
-        System.out.println("Enter anything to continue");
-        console.nextLine();
     }
     public void gameOver() {
         System.out.println("Game over.");
         System.out.println("Thanks for playing.");
     }
     public void victory() {
-        System.out.println("You won!");
+        System.out.println("====================");
+        System.out.println("      YOU WIN!");
+        System.out.println("====================");
         System.out.println("Thanks for playing.");
+    }
+    public int readChoice(int minimum, int maximum) {
+        while (true) {
+            if (!console.hasNextLine()) {
+                return minimum;
+            }
+            try {
+                int choice = Integer.parseInt(console.nextLine().trim());
+                if (choice >= minimum && choice <= maximum) {
+                    return choice;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a valid number.");
+            }
+            System.out.println("Enter a number from " + minimum + " to " + maximum + ".");
+        }
     }
 }
